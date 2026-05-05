@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  password              String
+  userType              String    @map("user_type")
+  accountStatus         String    @default("unverified") @map("account_status")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  lastLogin             DateTime? @map("last_login")
+  firstName             String?
+  lastName              String?
+  avatarUrl             String?
+  bio                   String?
+  locationCity          String?
+  locationState         String?
+  locationCountry       String?
+  isProfileVisible      Boolean   @default(true)
+  isMessagingEnabled    Boolean   @default(true)
+  emailNotifications    Boolean   @default(true)
+  subscriptionTier      String    @default("free")
+  subscriptionStatus    String    @default("active")
+  stripeCustomerId      String?
+  subscriptionEndDate   DateTime?
+  candidate             Candidate?
+  company               Company?
+  verifications         VerificationRecord[]
+  sentMessages          Message[]
+  recruiterThreads      ConversationThread[] @relation("recruiter")
+  candidateThreads      ConversationThread[] @relation("candidate")
+  auditLogs             AuditLog[]
+  blocksGiven           BlockMute[] @relation("blocker")
+  blocksReceived        BlockMute[] @relation("blockee")
+  @@index([email])
+  @@index([userType])
+}
+
+model Candidate {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  degreeType            String?
+  degreeField           String?
+  schoolName            String?
+  graduationDate        DateTime?
+  gpa                   Decimal?  @db.Decimal(3,2)
+  internships           Json?
+  projects              Json?
+  clubsSocieties        Json?
+  seekingFullTime       Boolean   @default(true)
+  preferredRoles        String[]
+  preferredIndustries   String[]
+  willingToRelocate     Boolean   @default(false)
+  preferredLocations    String[]
+  isOpenToOpportunities Boolean   @default(true)
+  profileCompletionPct  Int       @default(0)
+  topSkills             String[]
+  softSkills            String[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  interactions          Interaction[] @relation("candidateInteractions")
+  pools                 CandidatePool[]
+  aiSummary             AISummary?
+  @@index([userId])
+}
+
+model Company {
+  id                    String    @id @default(cuid())
+  primaryContactUserId  String    @unique
+  primaryContact        User      @relation(fields: [primaryContactUserId], references: [id], onDelete: Cascade)
+  companyName           String
+  website               String?
+  companySize           String?
+  industry              String?
+  description           String?
+  logoUrl               String?
+  isVerified            Boolean   @default(false)
+  verificationStatus    String    @default("pending")
+  ein                   String?
+  isActivelyHiring      Boolean   @default(true)
+  hiringFocus           String?
+  totalOpenPositions    Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  jobListings           JobListing[]
+  @@index([primaryContactUserId])
+}
+
+model VerificationRecord {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationType      String
+  status                String    @default("pending")
+  metadata              Json?
+  verifiedAt            DateTime?
+  expiresAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@index([userId])
+  @@index([status])
+}
+
+model JobListing {
+  id                    String    @id @default(cuid())
+  companyId             String
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobTitle              String
+  jobDescription        String?
+  salaryMin             Int?
+  salaryMax             Int?
+  salaryCurrency        String    @default("USD")
+  requiredDegree        String?
+  requiredGpa           Decimal?  @db.Decimal(3,2)
+  targetLocations       String[]
+  remoteOption          String    @default("onsite")
+  willingToTrain        Boolean   @default(false)
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  expiryDate            DateTime?
+  pools                 CandidatePool[]
+  interactions          Interaction[]
+  threads               ConversationThread[]
+  @@index([companyId])
+}
+
+model CandidatePool {
+  id                    String    @id @default(cuid())
+  jobListingId          String
+  jobListing            JobListing @relation(fields: [jobListingId], references: [id], onDelete: Cascade)
+  candidateId           String
+  candidate             Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  matchScore            Decimal   @db.Decimal(3,2)
+  matchReason           Json?
+  pooledAt              DateTime  @default(now())
+  @@unique([jobListingId, candidateId])
+  @@index([jobListingId])
+  @@index([candidateId])
+}
+
+model Interaction {
+  id                    String    @id @default(cuid())
+  recruiterId           String
+  candidateId           String
+  candidate             Candidate @relation("candidateInteractions", fields: [candidateId], references: [id], onDelete: Cascade)
+  jobListingId          String?
+  jobListing            JobListing? @relation(fields: [jobListingId], references: [id], onDelete: SetNull)
+  action                String
+  createdAt             DateTime  @default(now())
+  @@unique([recruiterId, candidateId])
+  @@index([recruiterId])
+  @@index([candidateId])
+}
+
+model ConversationThread {
+  id                    String    @id @default(cuid())
+  recruiterId           String
+  recruiter             User      @relation("recruiter", fields: [recruiterId], references: [id], onDelete: Cascade)
+  candidateUserId       String
+  candidate             User      @relation("candidate", fields: [candidateUserId], references: [id], onDelete: Cascade)
+  jobListingId          String?
+  jobListing            JobListing? @relation(fields: [jobListingId], references: [id], onDelete: SetNull)
+  conversationStatus    String    @default("initiated")
+  recruiterConsented    Boolean   @default(true)
+  candidateConsented    Boolean   @default(false)
+  lastMessageAt         DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  messages              Message[]
+  @@unique([recruiterId, candidateUserId])
+}
+
+model Message {
+  id                    String    @id @default(cuid())
+  conversationThreadId  String
+  conversationThread    ConversationThread @relation(fields: [conversationThreadId], references: [id], onDelete: Cascade)
+  senderId              String
+  sender                User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content               String
+  isRead                Boolean   @default(false)
+  readAt                DateTime?
+  createdAt             DateTime  @default(now())
+  @@index([conversationThreadId])
+  @@index([createdAt])
+}
+
+model BlockMute {
+  id                    String    @id @default(cuid())
+  blockerId             String
+  blocker               User      @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockeeId             String
+  blockee               User      @relation("blockee", fields: [blockeeId], references: [id], onDelete: Cascade)
+  blockType             String    @default("block")
+  createdAt             DateTime  @default(now())
+  @@unique([blockerId, blockeeId])
+}
+
+model AISummary {
+  id                    String    @id @default(cuid())
+  candidateId           String    @unique
+  candidate             Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  summaryText           String
+  keyHighlights         Json?
+  generatedAt           DateTime  @default(now())
+  expiresAt             DateTime?
+}
+
+model AuditLog {
+  id                    String    @id @default(cuid())
+  userId                String?
+  user                  User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action                String
+  resourceType          String?
+  metadata              Json?
+  ipAddress             String?
+  createdAt             DateTime  @default(now())
+  @@index([userId])
+}
+
+model FeatureFlag {
+  id                    String    @id @default(cuid())
+  flagName              String    @unique
+  isEnabled             Boolean   @default(false)
+  rolloutPercentage     Int       @default(0)
+  metadata              Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
