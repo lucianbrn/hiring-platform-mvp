@@ -82,6 +82,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Authentication
 - `POST /api/auth/register` - Create account
+- `POST /api/auth/verify` - Verify email & activate account
 - `POST /api/auth/login` - Sign in
 - `GET /api/auth/me` - Get current user
 
@@ -172,11 +173,8 @@ Match score (0-1) based on:
 ## Testing
 
 ```bash
-# Run unit tests
+# Run unit tests (matching algorithm + validation)
 npm run test
-
-# Run E2E tests
-npm run test:e2e
 
 # Watch mode
 npm run test:watch

@@ -19,7 +19,7 @@ export default function Register() {
     setError('')
     try {
       await axios.post('/api/auth/register', { email, password, firstName, lastName, userType })
-      router.push('/auth/verify')
+      router.push(`/auth/verify?email=${encodeURIComponent(email)}`)
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed')
     } finally {

@@ -39,9 +39,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="card">
             <h2 className="text-xl font-bold mb-2">Welcome, {user.firstName}!</h2>
-            <p className="text-gray-600 mb-4">Account Type: <span className="font-semibold">{user.user_type === 'recruiter' ? 'Recruiter' : 'Candidate'}</span></p>
+            <p className="text-gray-600 mb-4">Account Type: <span className="font-semibold">{user.userType === 'recruiter' ? 'Recruiter' : 'Candidate'}</span></p>
             <p className="text-gray-600 mb-4">Email: {user.email}</p>
-            <p className="text-gray-600 mb-4">Status: <span className="font-semibold text-green-600">{user.account_status === 'verified' ? 'Verified' : 'Pending Verification'}</span></p>
+            <p className="text-gray-600 mb-4">Status: <span className={`font-semibold ${user.accountStatus === 'verified' ? 'text-green-600' : 'text-amber-600'}`}>{user.accountStatus === 'verified' ? 'Verified' : 'Pending Verification'}</span></p>
           </div>
           <div className="card">
             <h2 className="text-xl font-bold mb-4">Quick Links</h2>
