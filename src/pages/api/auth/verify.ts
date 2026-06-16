@@ -1,19 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
+import { verifyVerificationToken } from '@/lib/auth'
 
 // Email verification endpoint.
 //
-// In production this would validate a one-time code delivered via SendGrid.
-// No email provider is wired up in this MVP, so verification is performed by
-// confirming ownership of the email address that just registered. Once an
-// account is verified it becomes discoverable in the swipe feed.
+// Activates an account by validating the single-purpose, time-limited token
+// delivered in the verification email. Once verified, the account becomes
+// discoverable in the swipe feed.
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   try {
-    const { email } = req.body
-    if (!email) return res.status(400).json({ error: 'Email required' })
+    const { token } = req.body
+    if (!token) return res.status(400).json({ error: 'Verification token required' })
 
-    const user = await prisma.user.findUnique({ where: { email } })
+    const payload = verifyVerificationToken(token)
+    if (!payload) return res.status(400).json({ error: 'Invalid or expired verification link' })
+
+    const user = await prisma.user.findUnique({ where: { id: payload.userId } })
     if (!user) return res.status(404).json({ error: 'User not found' })
 
     if (user.accountStatus === 'verified') {
@@ -22,8 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await prisma.$transaction([
       prisma.user.update({ where: { id: user.id }, data: { accountStatus: 'verified' } }),
-      prisma.verificationRecord.create({
-        data: { userId: user.id, verificationType: 'email', status: 'verified', verifiedAt: new Date() },
+      prisma.verificationRecord.updateMany({
+        where: { userId: user.id, verificationType: 'email', status: 'pending' },
+        data: { status: 'verified', verifiedAt: new Date() },
       }),
     ])
 

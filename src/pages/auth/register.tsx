@@ -18,8 +18,11 @@ export default function Register() {
     setLoading(true)
     setError('')
     try {
-      await axios.post('/api/auth/register', { email, password, firstName, lastName, userType })
-      router.push(`/auth/verify?email=${encodeURIComponent(email)}`)
+      const res = await axios.post('/api/auth/register', { email, password, firstName, lastName, userType })
+      // In production the user clicks the link in their email. In local dev the
+      // API returns the token directly so the flow can be completed without email.
+      const devToken = res.data?.verification_token
+      router.push(devToken ? `/auth/verify?token=${encodeURIComponent(devToken)}` : '/auth/verify')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed')
     } finally {

@@ -24,6 +24,18 @@ export default function Dashboard() {
 
   const handleLogout = () => { localStorage.clear(); router.push('/') }
 
+  const handleUpgrade = async () => {
+    const token = localStorage.getItem('token')
+    try {
+      const r = await axios.post('/api/billing/checkout', {}, { headers: { Authorization: `Bearer ${token}` } })
+      if (r.data?.url) window.location.href = r.data.url
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Could not start checkout')
+    }
+  }
+
+  const isPaid = user.subscriptionTier && user.subscriptionTier !== 'free'
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b border-gray-200">
@@ -42,6 +54,12 @@ export default function Dashboard() {
             <p className="text-gray-600 mb-4">Account Type: <span className="font-semibold">{user.userType === 'recruiter' ? 'Recruiter' : 'Candidate'}</span></p>
             <p className="text-gray-600 mb-4">Email: {user.email}</p>
             <p className="text-gray-600 mb-4">Status: <span className={`font-semibold ${user.accountStatus === 'verified' ? 'text-green-600' : 'text-amber-600'}`}>{user.accountStatus === 'verified' ? 'Verified' : 'Pending Verification'}</span></p>
+            <p className="text-gray-600 mb-4">Plan: <span className="font-semibold capitalize">{user.subscriptionTier || 'free'}</span></p>
+            {!isPaid && (
+              <button onClick={handleUpgrade} className="btn-primary">
+                Upgrade to {user.userType === 'recruiter' ? 'Pro ($99/mo)' : 'Premium ($4.99/mo)'}
+              </button>
+            )}
           </div>
           <div className="card">
             <h2 className="text-xl font-bold mb-4">Quick Links</h2>
