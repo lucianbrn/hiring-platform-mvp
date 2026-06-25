@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import Link from 'next/link'
+import NavBar from '@/components/NavBar'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -22,8 +23,6 @@ export default function Dashboard() {
   if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>
   if (!user) return null
 
-  const handleLogout = () => { localStorage.clear(); router.push('/') }
-
   const handleUpgrade = async () => {
     const token = localStorage.getItem('token')
     try {
@@ -38,15 +37,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">Hiring Platform</h1>
-          <div className="flex gap-4 items-center">
-            <span className="text-gray-700">{user.firstName} {user.lastName}</span>
-            <button onClick={handleLogout} className="btn-secondary">Logout</button>
-          </div>
-        </div>
-      </nav>
+      <NavBar />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="card">
@@ -64,8 +55,18 @@ export default function Dashboard() {
           <div className="card">
             <h2 className="text-xl font-bold mb-4">Quick Links</h2>
             <div className="space-y-2">
-              <Link href="/discover" className="block text-indigo-600 hover:underline">→ Start Discovering</Link>
-              <Link href="/profile" className="block text-indigo-600 hover:underline">→ Edit Profile</Link>
+              {user.userType === 'recruiter' ? (
+                <>
+                  <Link href="/company" className="block text-indigo-600 hover:underline">→ Company Profile</Link>
+                  <Link href="/jobs" className="block text-indigo-600 hover:underline">→ Post a Job</Link>
+                  <Link href="/discover" className="block text-indigo-600 hover:underline">→ Discover Candidates</Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/discover" className="block text-indigo-600 hover:underline">→ Start Discovering</Link>
+                  <Link href="/profile" className="block text-indigo-600 hover:underline">→ Edit Profile</Link>
+                </>
+              )}
               <Link href="/messages" className="block text-indigo-600 hover:underline">→ Messages</Link>
             </div>
           </div>

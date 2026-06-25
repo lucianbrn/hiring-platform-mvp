@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import NavBar from '@/components/NavBar'
 
 export default function Messages() {
   const router = useRouter()
@@ -65,6 +66,7 @@ export default function Messages() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <NavBar />
       <div className="max-w-5xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Messages</h1>
         {!conversations.length ? (
