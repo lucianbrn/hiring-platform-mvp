@@ -71,8 +71,11 @@ async function main() {
     }
   })
 
-  // Create test job
-  const job = await prisma.jobListing.create({
+  // Create test job (idempotent: avoid duplicates when re-seeding)
+  const existingJob = await prisma.jobListing.findFirst({
+    where: { companyId: company.id, jobTitle: 'Senior Software Engineer' },
+  })
+  const job = existingJob ?? await prisma.jobListing.create({
     data: {
       companyId: company.id,
       jobTitle: 'Senior Software Engineer',
@@ -88,9 +91,11 @@ async function main() {
     }
   })
 
-  // Create candidate pool
-  await prisma.candidatePool.create({
-    data: {
+  // Create candidate pool (idempotent)
+  await prisma.candidatePool.upsert({
+    where: { jobListingId_candidateId: { jobListingId: job.id, candidateId: candidate.id } },
+    update: {},
+    create: {
       jobListingId: job.id,
       candidateId: candidate.id,
       matchScore: 0.92,

@@ -12,6 +12,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (decoded.userType === 'recruiter') {
       const already = await prisma.interaction.findMany({ where: { recruiterId: decoded.userId }, select: { candidateId: true } })
       const exclude = already.map(i => i.candidateId)
+
+      // When a job is specified, surface its matched candidate pool ordered by
+      // match score so the strongest matches appear first.
+      if (jobId) {
+        const pool = await prisma.candidatePool.findMany({
+          where: { jobListingId: jobId as string, candidateId: { notIn: exclude } },
+          include: { candidate: { include: { user: { select: { firstName: true, lastName: true, locationCity: true, locationState: true } }, aiSummary: true } } },
+          orderBy: { matchScore: 'desc' },
+          take: parseInt(limit as string),
+        })
+        const candidates = pool.map(p => ({ ...p.candidate, matchScore: p.matchScore, matchReason: p.matchReason }))
+        return res.status(200).json({ candidates })
+      }
+
       const candidates = await prisma.candidate.findMany({ where: { id: { notIn: exclude }, isOpenToOpportunities: true, user: { isProfileVisible: true, accountStatus: 'verified' } }, include: { user: { select: { firstName: true, lastName: true, locationCity: true, locationState: true } }, aiSummary: true }, take: parseInt(limit as string) })
       return res.status(200).json({ candidates })
     } else {

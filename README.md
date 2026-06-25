@@ -81,9 +81,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## API Routes
 
 ### Authentication
-- `POST /api/auth/register` - Create account
+- `POST /api/auth/register` - Create account (sends verification email via SendGrid)
+- `POST /api/auth/verify` - Verify email via token & activate account
 - `POST /api/auth/login` - Sign in
 - `GET /api/auth/me` - Get current user
+
+### Billing (Stripe)
+- `POST /api/billing/checkout` - Start a subscription Checkout Session
+- `POST /api/billing/webhook` - Stripe webhook (activates/cancels subscriptions)
 
 ### Candidates
 - `GET /api/candidates/profile` - Get candidate profile
@@ -172,11 +177,8 @@ Match score (0-1) based on:
 ## Testing
 
 ```bash
-# Run unit tests
+# Run unit tests (matching algorithm + validation)
 npm run test
-
-# Run E2E tests
-npm run test:e2e
 
 # Watch mode
 npm run test:watch
